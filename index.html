@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>B3D Malzeme ve Darbe</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Crect width=%2240%22 height=%2240%22 rx=%2210%22 fill=%22%231d5fd1%22/%3E%3C/svg%3E">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* MC + Düşük hızlı darbe kabuğu: üst şerit (ad, iki bölüm, geçiş düğmesi, dil, aktarım durumu) ve tam boy bölüm çerçevesi */
+:root{
+  --bg:#eef1f4; --bar:#0f1b2a; --bar-fg:#e6eefb; --muted:#8ea3ba; --accent:#5b9bff; --ok:#3fbf86; --line:#1e2d40;
+  --font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0b131d;--bar:#0a121c;--bar-fg:#e6eefb;--muted:#8ea3ba;--accent:#7ab0ff;--ok:#4fd39a;--line:#1b2a3c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b131d;--bar:#0a121c;--bar-fg:#e6eefb;--muted:#8ea3ba;--accent:#7ab0ff;--ok:#4fd39a;--line:#1b2a3c;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bar);z-index:10}
+header{background:var(--bar);color:var(--bar-fg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font-weight:700;font-size:.95rem;letter-spacing:.2px;white-space:nowrap}
+.brand small{display:block;font-weight:500;font-size:.7rem;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.step{font:inherit;font-size:.84rem;color:var(--muted);display:flex;align-items:center;gap:6px;background:transparent;border:0;padding:4px 6px;border-radius:6px;cursor:pointer}
+.step:focus-visible{outline:3px solid var(--bar-fg);outline-offset:1px}
+.step b{font-family:var(--mono);font-size:.72rem;border:1px solid var(--muted);border-radius:50%;width:1.35rem;height:1.35rem;display:inline-flex;align-items:center;justify-content:center}
+.step.on{color:var(--bar-fg);font-weight:600}.step.on b{background:var(--accent);border-color:var(--accent);color:var(--bar)}
+#go{font:inherit;font-weight:600;font-size:.85rem;background:var(--accent);color:var(--bar);border:none;border-radius:8px;padding:7px 14px;cursor:pointer;white-space:nowrap}
+#go:focus-visible{outline:3px solid var(--bar-fg);outline-offset:2px}
+.lang{display:flex;border:1px solid var(--muted);border-radius:8px;overflow:hidden}.lang button{font:inherit;font-size:.78rem;font-weight:600;background:transparent;color:var(--muted);border:0;padding:5px 10px;cursor:pointer}.lang button[aria-pressed="true"]{background:var(--accent);color:var(--bar)}.lang button:focus-visible{outline:3px solid var(--bar-fg);outline-offset:-3px}
+#stat{font-size:.78rem;color:var(--muted);min-width:0;flex:1 1 220px;text-align:right}
+#stat.ok{color:var(--ok)}
+main{flex:1;min-height:0;position:relative}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
+@media (max-width:640px){#stat{text-align:left;flex-basis:100%}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<header>
+  <div class="brand">B3D Malzeme ve Darbe<small>Material Creator 3.8.0 · Impact Simulator (IS) 2.3.0</small></div>
+  <div class="steps" aria-label="Bölümler">
+    <button type="button" class="step" id="sMC" data-s="mc"><b>1</b>Malzeme (MC)</button>
+    <button type="button" class="step" id="sDI" data-s="di"><b>2</b>Darbe (IS)</button>
+  </div>
+  <button id="go" type="button">Darbeye geç</button>
+  <div class="lang" role="group" aria-label="Arayüz dili" data-noi18n><button type="button" data-l="tr">TR</button><button type="button" data-l="en">EN</button></div>
+  <div id="stat" role="status">Malzemeleri MC'de hazırla; darbe bölümüne geçince aktarılır.</div>
+</header>
+<main>
+  <iframe id="fMC" src="mc.html" title="B3D Material Creator"></iframe>
+  <iframe id="fDI" src="darbe.html" title="Impact Simulator (IS)" hidden></iframe>
+</main>
+<script>
+(function(){
+  const fMC=document.getElementById('fMC'),fDI=document.getElementById('fDI'),go=document.getElementById('go'),stat=document.getElementById('stat');
+  const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}},lsSet=(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}};
+  let cur=lsGet('b3ddi.kabuk.bolum')==='di'?'di':'mc';
+  function say(t,ok){stat.textContent=t;stat.className=ok?'ok':'';}
+  /* MC kütüphanesini darbe bölümüne aktarır: MC_BRIDGE -> localStorage (bds.mccatalog.v1, bds.mcmodel.v1) -> DARBE_API.mcSync */
+  function aktar(){
+    let b=null;
+    try{b=fMC.contentWindow&&fMC.contentWindow.MC_BRIDGE?fMC.contentWindow.MC_BRIDGE():null;}catch(e){say('MC okunamadı: '+e.message);return;}
+    if(!b){say('MC henüz yüklenmedi; birkaç saniye sonra yeniden geç.');return;}
+    lsSet('bds.mccatalog.v1',JSON.stringify(b.catalog));lsSet('bds.mcmodel.v1',JSON.stringify(b.models));
+    let d=null;try{d=fDI.contentWindow&&fDI.contentWindow.DARBE_API?fDI.contentWindow.DARBE_API.mcSync():null;}catch(e){}
+    const n=b.catalog.materials.length;
+    say(d?`MC'den ${n} malzeme okundu; ${d.matched} tanesi darbe kartlarıyla eşleşti, ${d.added} tanesi MC grubuna eklendi.`:`MC'den ${n} malzeme hazır; darbe bölümü açılınca alınır.`,true);
+  }
+  function show(s){
+    cur=s;lsSet('b3ddi.kabuk.bolum',s);
+    fMC.hidden=s!=='mc';fDI.hidden=s!=='di';
+    [['sMC','mc'],['sDI','di']].forEach(([id,k])=>{const e=document.getElementById(id);e.classList.toggle('on',s===k);e.setAttribute('aria-current',s===k?'page':'false');});
+    go.textContent=s==='mc'?'Darbeye geç':'Malzemeye dön';
+    if(s==='di'){aktar();setTimeout(()=>{try{fDI.contentWindow.dispatchEvent(new Event('resize'));}catch(e){}},50);}
+    else say("Malzemeleri MC'de hazırla; darbe bölümüne geçince aktarılır.");
+  }
+  go.addEventListener('click',()=>show(cur==='mc'?'di':'mc'));
+  document.querySelectorAll('.step[data-s]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.s)));
+  /* arayüz dili; seçim iki modüle ve kabuğa uygulanır, localStorage 'b3d.lang' ile hatırlanır */
+  const langBtns=[...document.querySelectorAll('.lang button')];
+  function setLang(l){ l=l==='en'?'en':'tr'; lsSet('b3d.lang',l); langBtns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.l===l)));
+    for(const w of [window,fMC.contentWindow,fDI.contentWindow]){ try{ if(w&&w.B3D_I18N) w.B3D_I18N.set(l); }catch(e){} } }
+  langBtns.forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.l)));
+  langBtns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.l===(lsGet('b3d.lang')==='en'?'en':'tr'))));
+  window.B3D_SET_LANG=setLang;
+  fDI.addEventListener('load',()=>{if(cur==='di')setTimeout(aktar,1500);});
+  fMC.addEventListener('load',()=>{if(cur==='di')setTimeout(aktar,2500);});
+  show(cur);
+})();
+</script>
+
+<script src="i18n_darbe.js"></script>
+<script src="i18n.js"></script>
+</html>
