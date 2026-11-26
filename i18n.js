@@ -13,6 +13,9 @@
   var A = new WeakMap();   // öğe -> {attr: {src, en}}
   var busy = false, obs = null;
 
+  /* İngilizce metinde ondalık ayırıcı nokta olmalı: 76,2 -> 76.2 (binlik ayırıcıya dokunulmaz) */
+  function ond(x) { return (lang === "en" && typeof x === "string") ? x.replace(/(\d),(\d)/g, "$1.$2") : x; }
+
   function tr(s) {
     if (!s) return s;
     var core = s.trim(); if (!core) return s;
@@ -26,10 +29,10 @@
       if (!FR || !FR.length) return s;
       var o = norm, ch = false;
       for (var j = 0; j < FR.length; j++) { if (o.indexOf(FR[j][0]) >= 0) { o = o.split(FR[j][0]).join(FR[j][1]); ch = true; } }
-      return ch ? lead + o + trail : s;
+      return ch ? lead + ond(o) + trail : s;
     }
     var i = 0;
-    return lead + e.replace(/#/g, function () { return i < nums.length ? nums[i++] : "#"; }) + trail;
+    return lead + e.replace(/#/g, function () { return i < nums.length ? ond(nums[i++]) : "#"; }) + trail;
   }
   /* Grafiklerdeki canvas yazıları da aynı sözlükle çevrilir; yerleşim için measureText de çevrilmiş metni ölçer */
   var CP = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
@@ -84,6 +87,14 @@
     if (root.querySelectorAll) { var els = root.querySelectorAll("[title],[placeholder],[aria-label]"); for (var i = 0; i < els.length; i++) doAttr(els[i]); }
   }
   function run(root) { if (busy) return; busy = true; try { walk(root || document.body); } finally { busy = false; } }
+  /* sayı kutuları: tarayıcı, type=number alanını belge diline göre biçimler;
+     dil değişince değerin yeniden atanması gösterimi tazeler (1,1 -> 1.1) */
+  function sayi_tazele() {
+    try {
+      var ns = document.querySelectorAll('input[type=number]');
+      for (var i = 0; i < ns.length; i++) { var v = ns[i].value; if (v !== "") ns[i].value = v; }
+    } catch (e) {}
+  }
   function start() {
     document.documentElement.setAttribute("lang", lang);
     run();
@@ -104,7 +115,7 @@
   }
   window.B3D_I18N = {
     get: function () { return lang; },
-    set: function (l) { lang = l === "en" ? "en" : "tr"; try { localStorage.setItem("b3d.lang", lang); } catch (e) {} document.documentElement.setAttribute("lang", lang); run(); try { window.dispatchEvent(new Event("resize")); } catch (e) {} },
+    set: function (l) { lang = l === "en" ? "en" : "tr"; try { localStorage.setItem("b3d.lang", lang); } catch (e) {} document.documentElement.setAttribute("lang", lang); run(); sayi_tazele(); try { window.dispatchEvent(new Event("resize")); } catch (e) {} },
     tr: tr, size: function () { return Object.keys(D).length; }
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();

@@ -130,6 +130,18 @@ ul.mods li,ul.errs li{margin:3px 0}
 .stopMsg{border-left-color:var(--red)!important}
 button.danger{border-color:var(--red);color:var(--red)}
 #qBanner{margin:0 0 14px}
+
+/* 2.4.0 */
+.infoDot{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:6px;
+  border-radius:50%;background:var(--line,#c7d0d8);color:#223;font-size:10px;font-weight:700;font-style:normal;
+  cursor:help;vertical-align:middle;line-height:1}
+.infoDot:hover,.infoDot:focus{background:#3b7bbf;color:#fff;outline:none}
+.dmg{width:100%;max-width:420px;height:auto;display:block;margin:6px 0 2px}
+.dmgZoom{max-width:470px}
+.zoomBox{margin-top:14px;padding:10px 12px 6px;border:1px solid var(--line,#d8dee4);border-radius:8px;background:#fbfcfd}
+.zoomBox .sub{margin-top:0}
+#btnReset{background:#b23b3b;color:#fff;border-color:#8f2f2f;font-weight:700}
+#btnReset:hover{background:#c94747}
 </style>
 </head>
 
@@ -141,7 +153,7 @@ button.danger{border-color:var(--red);color:var(--red)}
     <p>Ağırlık düşürme kulesinde sanal test. Malzemeler MC'den gelir (12 MC kartı). Kaynaklı elastik temas ve plaka modeli, malzeme türüne göre hasar eşiği ve numune sıcaklığı etkisi; eşik üstü hasar ve perforasyon yalnız kaynaklı kalibrasyon parametreleriyle hesaplanır. <span id="appVer" class="ver"></span></p>
   </div>
   <div class="machineSel">
-    <label for="machine">Test cihazı (Türkiye’deki laboratuvarlar)</label>
+    <label for="machine">Test cihazı</label>
     <select id="machine"></select>
   </div>
 </header>
@@ -214,7 +226,7 @@ button.danger{border-color:var(--red);color:var(--red)}
           <label class="f"><span>Numune eni, mm</span><input type="number" id="sLy" step="1"></label>
           <label class="f wide"><span>Bağlama düzeni</span><select id="sFix"></select></label>
           <label class="f" id="fixDBox"><span>Açıklık çapı, mm</span><input type="number" id="sFixD" step="1" min="10"></label>
-          <label class="f"><span>Numune sıcaklığı, °C</span><input type="number" id="sTemp" step="1" min="-50" max="70" value="23"></label>
+          <label class="f"><span>Numune sıcaklığı, °C (−50 ile 70 arası)</span><input type="number" id="sTemp" step="1" min="-50" max="70" value="23" title="Numunenin deney anındaki sıcaklığı. Program bu sıcaklıkta modül, dayanım ve matris baskın özellik çarpanlarını uygular. Kullanılan literatür verisi −50 ile 70 °C arasında geçerlidir; bu aralığın dışında değer girilemez."></label>
           <div class="f wide"><span>Sıcaklık çarpanları (23 °C'ye göre)</span><span id="tempInfo" class="hint" style="margin:0"></span></div>
         </div>
         <p class="warn on" id="matOrigin"></p>
@@ -259,6 +271,7 @@ button.danger{border-color:var(--red);color:var(--red)}
         <label class="f" id="inEBox"><span>Darbe enerjisi, J</span><input type="number" id="inE" step="0.5" min="0.1"></label>
         <label class="f" id="inHBox" style="display:none"><span>Düşme yüksekliği, mm</span><input type="number" id="inH" step="1" min="1"></label>
         <button class="primary" id="run">Testi başlat</button>
+        <button id="btnReset" type="button" title="Makine, vurucu, numune ve malzeme ayarlarını başlangıç değerlerine döndürür; test günlüğünü ve sonuçları temizler. Kayıtlı malzemeleriniz silinmez.">Sıfırla</button>
       </div>
     </section>
 
@@ -344,7 +357,7 @@ button.danger{border-color:var(--red);color:var(--red)}
    [D732] ASTM D732: zımba kesme dayanımı tanımı tau = F/(pi D t)
    [TH]  Thornton (1997) J Appl Mech 64:383: elastik-tam plastik küre teması (metal ve polimer, 2.3.0)
 */
-const SOLVER_VERSION = "2.3.0";
+const SOLVER_VERSION = "2.6.0";
 const f2 = (v) => v.toFixed(2).replace(".", ",");
 const G = 9.81;
 
@@ -646,29 +659,30 @@ if (typeof module !== "undefined") module.exports = { simulate, tempFactors, HEA
 
 /* ===== Veri ===== */
 const MACHINES = [
-  /* 2.1.0: bu çalışmanın ana düzeni. Kütle tez deneylerindeki enerji ve hızdan türetildi: m = 2E/v² = 2·100/3,57² = 15,69 kg
-     (110 J/3,745 m/s ve 120 J/3,91 m/s ile de 15,69 ile 15,70 kg). Ø20 mm uç ve 100 × 100 mm numune aynı deneylerden. */
-  { id: "hitit_tez", name: "Hitit HÜBTUAM CEAST 9350, tez düzeni (15,7 kg, Ø20 mm)", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 37.5, vMax: 24, cell: 22, defMass: 15.7, defD: 20,
-    labs: "Hitit Üniversitesi HÜBTUAM (Burak Hülagü'nün tez darbe deneyleri: 100 × 100 mm numune, Ø20 mm uç, 100, 110 ve 120 J)",
-    note: "Düşen kütle 15,7 kg, tezdeki darbe enerjisi ve başlangıç hızından türetildi (m = 2E/v²). Ø20 mm yarı küresel uç ve 100 × 100 mm numune aynı deneylerden. Enerji aralığı Hitit HÜBTUAM cihaz sayfasından." },
-  { id: "ceast9350", name: "Instron CEAST 9350 (Fractovis Plus)", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 37.5, vMax: 24, cell: 22, defMass: 5.045, defD: 20,
-    labs: "Hitit Üniversitesi HÜBTUAM, Süleyman Demirel Üniversitesi YETEM, Dokuz Eylül Üniversitesi Makine Mühendisliği, Afyon Kocatepe Üniversitesi",
-    note: "0,59 ile 757 J enerji aralığı Hitit HÜBTUAM cihaz sayfasından alındı. Yükseklik, kütle ve hız sınırları tipik katalog değeridir; kullandığınız cihazın kartıyla doğrulayın." },
+  /* 2.4.0: cihaz tanimlarinda kurum adi kullanilmaz; yalniz cihaz turu, ticari model adi ve sayisal sinirlar verilir.
+     2.1.0: bu calismanin ana duzeni. Kutle, ayni duzende kayda alinmis bir deneyin enerjisi ve baslangic hizindan
+     turetildi: m = 2E/v2 = 2*100/3,57^2 = 15,69 kg (110 J/3,745 m/s ve 120 J/3,91 m/s ile de 15,69 ile 15,70 kg). */
+  { id: "hitit_tez", name: "Bu çalışmanın düzeni (15,7 kg, Ø20 mm yarı küresel uç)", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 70, vMax: 24, cell: 22, defMass: 15.7, defD: 20,
+    labs: "Ticari düşen ağırlık cihazı; 100 × 100 mm numune, Ø20 mm yarı küresel uç",
+    note: "Düşen kütle 15,7 kg, aynı düzende kayda alınmış bir deneyin darbe enerjisi ve başlangıç hızından türetildi (m = 2E/v²). Enerji, kütle ve hız sınırları cihazın üretici kataloğundan alındı." },
+  { id: "ceast9350", name: "Instron CEAST 9350 (Fractovis Plus)", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 70, vMax: 24, cell: 22, defMass: 5.045, defD: 20,
+    labs: "Ticari düşen ağırlık cihazı (üretici katalog değerleri)",
+    note: "0,59 ile 757 J enerji aralığı, 2 ile 70 kg düşen kütle ve 24 m/s azami hız üretici kataloğundan alındı. Yükseklik sınırı serbest düşme için tipik değerdir; kullandığınız cihazın kartıyla doğrulayın." },
   { id: "dynatup9250", name: "Instron Dynatup 9250 HV", Emin: 1, Emax: 1600, hMax: 1.25, mMin: 2.5, mMax: 70, vMax: 20, cell: 22, defMass: 6.32, defD: 12.7,
-    labs: "Gazi Üniversitesi (metal köpük düşük hızlı darbe çalışmalarında 6,32 kg ve Ø12,7 mm uçla kullanılmış)",
-    note: "Kütle ve uç varsayılanı yayımlanmış çalışmadan, diğer sınırlar yaklaşık katalog değeridir." },
-  { id: "cukurova", name: "Çukurova Üniversitesi düşen ağırlık sistemi", Emin: 2, Emax: 350, hMax: 1.4, mMin: 2, mMax: 25.5, vMax: 5.2, cell: 22, defMass: 5, defD: 20,
-    labs: "Çukurova Üniversitesi Makine Mühendisliği Bölümü",
-    note: "2 ile 350 J enerji, en az 1400 mm düşme yüksekliği ve 0,89 ile 5,2 m/s hız aralığı BAP alım şartnamesinden alındı. Kütle sınırı bu değerlerden türetildi." },
-  { id: "selcuk", name: "Selçuk Üniversitesi özel yapım kule", Emin: 10, Emax: 200, hMax: 0.65, mMin: 30, mMax: 30, vMax: 3.5, cell: 50, defMass: 30, defD: 24,
-    labs: "Selçuk Üniversitesi (cam/epoksi tabakalı kompozit çalışmaları)",
-    note: "30 kg vurucu kütlesi, Ø24 mm yarı küresel uç ve 2 ile 3 m/s çarpma hızı Kara (2006), Selçuk Üniversitesi Fen Bilimleri Enstitüsü yüksek lisans çalışmasından alındı. Makine verisidir, malzeme verisi değildir." },
-  { id: "ktun", name: "Konya Teknik Üniversitesi özel yapım kule", Emin: 2, Emax: 40, hMax: 0.55, mMin: 5.6, mMax: 5.6, vMax: 3.3, cell: 20, defMass: 5.6, defD: 20,
-    labs: "Konya Teknik Üniversitesi (cam ve keten hibrit kompozit çalışmaları)",
-    note: "5,6 kg vurucu ve 2 ile 3 m/s hız Konya Teknik Üniversitesi yayımlanmış lisansüstü çalışmasından alındı. Uç çapı bilinmiyor, Ø20 mm varsayıldı." },
-  { id: "odtu", name: "ODTÜ MERLAB darbe test sistemi", Emin: 1, Emax: 300, hMax: 1.0, mMin: 2, mMax: 30, vMax: 5, cell: 22, defMass: 5, defD: 20,
-    labs: "Orta Doğu Teknik Üniversitesi Merkezi Laboratuvar",
-    note: "Laboratuvar Charpy ve penetrasyon hizmeti veriyor, cihaz modeli açık sayfada yok. Genel sınırlar kullanıldı." },
+    labs: "Ticari düşen ağırlık cihazı (üretici katalog değerleri)",
+    note: "Kütle ve uç varsayılanı yayımlanmış bir çalışmadan, diğer sınırlar yaklaşık katalog değeridir." },
+  { id: "cukurova", name: "Özel yapım düşen ağırlık sistemi, 2 ile 350 J", Emin: 2, Emax: 350, hMax: 1.4, mMin: 2, mMax: 25.5, vMax: 5.2, cell: 22, defMass: 5, defD: 20,
+    labs: "Laboratuvar düzeyinde özel yapım sistem",
+    note: "Enerji, düşme yüksekliği ve hız aralığı yayımlanmış bir alım şartnamesinden alındı. Kütle sınırı bu değerlerden türetildi." },
+  { id: "selcuk", name: "Özel yapım kule, 30 kg vurucu", Emin: 10, Emax: 200, hMax: 0.65, mMin: 30, mMax: 30, vMax: 3.5, cell: 50, defMass: 30, defD: 24,
+    labs: "Laboratuvar düzeyinde özel yapım kule",
+    note: "30 kg vurucu kütlesi, Ø24 mm yarı küresel uç ve 2 ile 3 m/s çarpma hızı yayımlanmış bir yüksek lisans çalışmasından alındı. Makine verisidir, malzeme verisi değildir." },
+  { id: "ktun", name: "Özel yapım kule, 5,6 kg vurucu", Emin: 2, Emax: 40, hMax: 0.55, mMin: 5.6, mMax: 5.6, vMax: 3.3, cell: 20, defMass: 5.6, defD: 20,
+    labs: "Laboratuvar düzeyinde özel yapım kule",
+    note: "5,6 kg vurucu ve 2 ile 3 m/s hız yayımlanmış bir lisansüstü çalışmadan alındı. Uç çapı bilinmiyor, Ø20 mm varsayıldı." },
+  { id: "odtu", name: "Genel amaçlı darbe test sistemi, 1 ile 300 J", Emin: 1, Emax: 300, hMax: 1.0, mMin: 2, mMax: 30, vMax: 5, cell: 22, defMass: 5, defD: 20,
+    labs: "Merkezi laboratuvar tipi darbe test sistemi",
+    note: "Cihaz modeli açık kaynaklarda belirtilmediği için genel sınırlar kullanılmıştır." },
   { id: "custom", name: "Özel makine (tüm sınırlar serbest)", Emin: 0.1, Emax: 2000, hMax: 3, mMin: 0.5, mMax: 100, vMax: 30, cell: 100, defMass: 5, defD: 20,
     labs: "Kendi kurduğunuz ya da listede olmayan bir cihaz",
     note: "Bütün sınırları ihtiyacınıza göre değiştirin." }
@@ -681,7 +695,7 @@ const FIXTURES = [
   { id: "custom", name: "Özel dairesel açıklık", d: 50, Lx: 100, Ly: 100 }
 ];
 
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.6.0";
 
 /* Genel temel malzemeler. Değerler kaynaksız örnek değerlerdir: varsayım etiketi taşır,
    doğrulanmış literatür değeri değildir. Model kalibrasyon parametreleri boştur (null). */
@@ -710,8 +724,8 @@ const STUDY_MATS = {
     constants: { E: 70, nu: 0.17, sT: 150, rho: 2200 }, temp: { type: "const" } },
   st_al2o3: { name: "Al₂O₃", model: "cer", mc: ["al2o3", "alumina", "alümina"], src: MC_SRC + "; T = 262 MPa (JH-2 kartı).",
     constants: { E: 380, nu: 0.22, sT: 262, rho: 3950 }, temp: { type: "const" } },
-  st_sic: { name: "SiC", model: "cer", mc: ["sic"], src: MC_SRC + "; T = 370 MPa (JH-2 kartı).",
-    constants: { E: 410, nu: 0.16, sT: 370, rho: 3210 }, temp: { type: "const" } },
+  st_sic: { name: "SiC", model: "cer", mc: ["sic"], src: MC_SRC + "; T = 370 MPa (JH-2 kartı); ν = 0,14 (MC sic kartı, LS-DYNA kartıyla aynı).",
+    constants: { E: 410, nu: 0.14, sT: 370, rho: 3210 }, temp: { type: "const" } },
   st_ud: { name: "T300/epoksi UD [0/90]3s", model: "comp", mc: ["t300", "ud"], src: MC_SRC + "; Ez 9 GPa, ν 0,05, GIIc 800 J/m² varsayım.",
     constants: { E: 73.67, Ez: 9, nu: 0.05, GIIc: 800, rho: 1536 }, temp: TM_EP },
   st_wov: { name: "T300/epoksi düz örgü", model: "comp", mc: ["wov", "örgü"], src: MC_SRC + "; Ez 9 GPa, ν 0,05, GIIc 1000 J/m² varsayım.",
@@ -760,18 +774,18 @@ const CONST_DEFS = {
    Kalibrasyon kümesi yalnız 23 °C, 10 ve 40 J LS-DYNA çözümleridir; 20 J ve −50 / 70 °C vakaları doğrulama için ayrı tutulur. */
 /*STUDY_CAL_BASLA*/
 const STUDY_CAL = {
-  st_al: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 76.6314, "dmax": 0.566837, "pDmg": 0.2, "a0Base": 0.173019, "a0Slope": 0.552027, "beta": 5.0, "kDecay": 0.0856917, "fres": 0.192514, "kUnload": 0.104976} },
-  st_pa6: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 50.7212, "dmax": 0.329639, "pDmg": 0.389568, "a0Base": 0.9, "a0Slope": 0.0999, "beta": 5.0, "kDecay": 6.16114, "fres": 0.430284, "kUnload": 0.1} },
-  st_ti: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 133.282, "dmax": 0.326863, "pDmg": 0.418176, "a0Base": 0.259551, "a0Slope": 0.618262, "beta": 5.0, "kDecay": 0.133375, "fres": 0.450108, "kUnload": 0.1} },
-  st_sio2: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 10.8874, "dmax": 0.389313, "pDmg": 3.73819, "a0Base": 0.505619, "a0Slope": 0.238266, "beta": 0.0940073, "kDecay": 0.0562101, "fres": 0.0669658, "kUnload": 0.686628} },
-  st_al2o3: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 17.8561, "dmax": 0.361804, "pDmg": 5.0, "a0Base": 0.0123957, "a0Slope": 0.0, "beta": 0.05, "kDecay": 0.0553959, "fres": 0.0, "kUnload": 20.0} },
-  st_sic: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 27.5248, "dmax": 0.457387, "pDmg": 5.0, "a0Base": 0.0, "a0Slope": 0.0, "beta": 0.05, "kDecay": 0.05, "fres": 0.0, "kUnload": 20.0} },
-  st_ud: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 17.9399, "dmax": 0.0, "pDmg": 5.0, "a0Base": 0.455975, "a0Slope": 0.543481, "beta": 2.87043, "kDecay": 7.53402, "fres": 0.776604, "kUnload": 1.31891} },
-  st_ara: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 13.61, "dmax": 0.507552, "pDmg": 0.421787, "a0Base": 0.805733, "a0Slope": 0.0932672, "beta": 4.05289, "kDecay": 10.0, "fres": 0.576403, "kUnload": 1.41739} },
-  st_uhm: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 39.4122, "dmax": 0.144704, "pDmg": 5.0, "a0Base": 0.9, "a0Slope": 0.0999, "beta": 0.05, "kDecay": 0.05, "fres": 0.177145, "kUnload": 0.1} },
-  st_bas: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 13.776, "dmax": 0.95, "pDmg": 0.2, "a0Base": 0.704616, "a0Slope": 0.0, "beta": 5.0, "kDecay": 0.05, "fres": 0.698883, "kUnload": 0.366142} },
-  st_wov: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 18.3171, "dmax": 0.32761, "pDmg": 3.08151, "a0Base": 0.719313, "a0Slope": 0.154598, "beta": 4.03997, "kDecay": 2.38363, "fres": 0.35884, "kUnload": 1.1066} },
-  st_hyb: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, Hitit CEAST 9350 düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 21.6788, "dmax": 0.5847, "pDmg": 3.65988, "a0Base": 0.241837, "a0Slope": 0.331745, "beta": 4.0015, "kDecay": 10.0, "fres": 0.704109, "kUnload": 1.49933} }
+  st_al: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 76.6276, "dmax": 0.607309, "pDmg": 0.2, "a0Base": 0, "a0Slope": 0, "beta": 0.05, "kDecay": 10, "fres": 0.280981, "kUnload": 4.08163} },
+  st_pa6: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 51.7972, "dmax": 0.261073, "pDmg": 0.630009, "a0Base": 0.9, "a0Slope": 0.0999, "beta": 5, "kDecay": 1.63611, "fres": 0.337046, "kUnload": 20} },
+  st_ti: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 133.193, "dmax": 0.419782, "pDmg": 1.43093, "a0Base": 0.860812, "a0Slope": 0, "beta": 5, "kDecay": 6.8432, "fres": 0.634924, "kUnload": 1.38739} },
+  st_sio2: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 10.8874, "dmax": 0.389313, "pDmg": 3.73819, "a0Base": 0.505619, "a0Slope": 0.238266, "beta": 0.0940073, "kDecay": 0.0562101, "fres": 0.0669658, "kUnload": 0.686628} },
+  st_al2o3: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 17.8561, "dmax": 0.361804, "pDmg": 5, "a0Base": 0.0123957, "a0Slope": 0, "beta": 0.05, "kDecay": 0.0553959, "fres": 0, "kUnload": 20} },
+  st_sic: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 27.4023, "dmax": 0.470331, "pDmg": 5, "a0Base": 0, "a0Slope": 0, "beta": 0.05, "kDecay": 0.05, "fres": 0, "kUnload": 20} },
+  st_ud: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 17.9126, "dmax": 0.540378, "pDmg": 0.2, "a0Base": 0.525878, "a0Slope": 0.473647, "beta": 5, "kDecay": 0.05, "fres": 0.591699, "kUnload": 0.369331} },
+  st_ara: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 13.6259, "dmax": 0.95, "pDmg": 0.228801, "a0Base": 0.609603, "a0Slope": 0.0932218, "beta": 5, "kDecay": 0.0521732, "fres": 0.672167, "kUnload": 0.642696} },
+  st_uhm: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 37.5236, "dmax": 0.358827, "pDmg": 0.2, "a0Base": 0.9, "a0Slope": 0.0999, "beta": 0.05, "kDecay": 0.166687, "fres": 0.0491002, "kUnload": 2.08979} },
+  st_bas: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 14.2184, "dmax": 0.864742, "pDmg": 3.88965, "a0Base": 0.423138, "a0Slope": 0, "beta": 2.56968, "kDecay": 10, "fres": 0.958434, "kUnload": 20} },
+  st_wov: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 15.8735, "dmax": 0.95, "pDmg": 0.2, "a0Base": 0.9, "a0Slope": 0, "beta": 5, "kDecay": 0.0634429, "fres": 0.611998, "kUnload": 0.447315} },
+  st_hyb: { src: "LS-DYNA kalibrasyonu (bu çalışma): 23 °C, 10 ve 40 J, bu çalışmanın düzeni, 100 × 100 × 3 mm; 2_TRDizin_Makalesi_MC_IS/03_Ansys/sonuclar", v: {"tauP": 19.4701, "dmax": 0.635833, "pDmg": 0.364658, "a0Base": 0.9, "a0Slope": 0.0305428, "beta": 5, "kDecay": 4.96319, "fres": 0.82601, "kUnload": 1.29217} }
 };
 /*STUDY_CAL_BITIS*/
 function studyCal(k) {
@@ -794,7 +808,9 @@ const RUN_COLORS = ["--blue", "--red", "--green", "--violet", "--orange", "--tea
 /* ===== Yardımcılar ===== */
 const $ = (id) => document.getElementById(id);
 const num = (id) => parseFloat($(id).value);
-const fmt = (v, d = 2) => (v == null || !isFinite(v)) ? "yok" : v.toLocaleString("tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d });
+/* sayı biçimi arayüz diline bağlıdır: Türkçede virgül, İngilizcede nokta */
+const LOC = () => (window.B3D_I18N && window.B3D_I18N.get() === "en") ? "en-US" : "tr-TR";
+const fmt = (v, d = 2) => (v == null || !isFinite(v)) ? "yok" : v.toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d });
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -885,6 +901,26 @@ function importJSON(e) {
   e.target.value = "";
 }
 
+/* ===== 2.4.0: butun ayarlari baslangic degerine dondurur ===== */
+function resetAll() {
+  if (!confirm("Makine, vurucu, numune ve malzeme ayarları başlangıç değerlerine dönecek; test günlüğü ve sonuçlar silinecek. Kayıtlı malzemeleriniz silinmez. Sürdürülsün mü?")) return;
+  state.log = []; state.current = null; state.runId = 0;
+  state.shape = "hemi";
+  $("hD").value = 20; $("hAng").value = 45; $("hMat").value = "steel";
+  $("hPreset").value = "";
+  $("sFix").value = "ring76";
+  $("inMode").value = "E"; $("inEBox").style.display = ""; $("inHBox").style.display = "none";
+  $("inE").value = 20;
+  $("sDirect").checked = true; $("sT").disabled = false; $("sT").value = 3;
+  $("sPlies").value = ""; $("sPlyT").value = "";
+  $("sTemp").value = 23;
+  applyMachine("hitit_tez");
+  fillMatSelect("st_hyb"); applyMat("st_hyb");
+  applyFixture(); syncShape();
+  $("results").innerHTML = `<p class="empty">Malzemeyi ve numune kalınlığını girip Testi başlat’a basın.</p>`;
+  renderLog(); drawMain(); refresh();
+}
+
 /* ===== Arayüz kurulum ===== */
 function init() {
   resetMats();
@@ -901,13 +937,14 @@ function init() {
     ${d.note ? `<p class="hint" style="grid-column:1/-1;margin:0">${d.note}</p>` : ""}</div>`).join("");
 
   $("hD").value = 20; $("hAng").value = 45; $("hMat").value = "steel";
-  /* 2.1.0 varsayılan düzen: Hitit tez düzeni, Ø76,2 mm kelepçe, 100 × 100 × 3 mm numune, 20 J, HYB01 hibrit */
+  /* 2.1.0 varsayılan düzen: bu çalışmanın düzeni, Ø76,2 mm kelepçe, 100 × 100 × 3 mm numune, 20 J, HYB01 hibrit */
   $("sFix").value = "ring76";
   $("inE").value = 20;
   $("sDirect").checked = true; $("sT").disabled = false; $("sT").value = 3;
   applyMachine("hitit_tez");
   fillMatSelect("st_hyb"); applyMat("st_hyb");
   applyFixture();
+  try { addInfoIcons(); clampTemp(); $("btnReset").addEventListener("click", resetAll); } catch (e) { console.warn(e); }
   $("pModel").addEventListener("change", saveMatEdits);
   $("cmpRun").addEventListener("click", runCompare);
   $("tSweep").addEventListener("click", runTempSweep);
@@ -1230,6 +1267,164 @@ function runTest() {
   animate(S, res);
 }
 
+/* ===== 2.4.0: deger kutularinin bilgi simgeleri ===== */
+const INFO_TEXT = {
+  mEmin: "Cihazın verebileceği en küçük darbe enerjisi. Girilen enerji bunun altındaysa program uyarır.",
+  mEmax: "Cihazın verebileceği en büyük darbe enerjisi. Yay destekli cihazlarda serbest düşmeden büyüktür.",
+  mHmax: "Vurucunun serbest bırakılabileceği en büyük düşme yüksekliği. Hız bu yükseklikten hesaplanır.",
+  mMmin: "Cihaza takılabilen en küçük düşen kütle (vurucu, başlık ve ek ağırlıklar toplamı).",
+  mMmax: "Cihaza takılabilen en büyük düşen kütle. Enerji bu kütle ile hızın karesinden gelir.",
+  mVmax: "Cihazın ulaşabileceği en büyük çarpma hızı. Yay destekli sistemlerde serbest düşme hızından büyüktür.",
+  mCell: "Yük hücresinin ölçebileceği en büyük kuvvet. Hesaplanan tepe kuvvet bunu aşarsa sonuç ölçülemez, program uyarır.",
+  hD: "Vurucu ucunun çapı. Temas alanını ve dolayısıyla temas rijitliğini belirler; küçük çap aynı kuvvette daha derin ezilme verir.",
+  hAng: "Konik ucun yarı açısı. Yalnız konik uçta kullanılır; temas yasası bu açıya bağlıdır.",
+  hMat: "Vurucu ucunun malzemesi. Temas hesabında ucun modülü ve Poisson oranı kullanılır.",
+  hMass: "Düşen toplam kütle. Darbe enerjisi bu kütle ile çarpma hızının karesinin yarısıdır.",
+  sPlies: "Laminattaki tabaka sayısı. Numune kalınlığı tabaka sayısı ile tabaka kalınlığının çarpımıdır.",
+  sPlyT: "Tek bir tabakanın kalınlığı. Tabaka sayısıyla çarpılarak numune kalınlığı bulunur.",
+  sT: "Numunenin toplam kalınlığı. Eğilme rijitliği kalınlığın küpüyle, delinme yolu kalınlıkla orantılıdır.",
+  sLx: "Numunenin bir kenarının uzunluğu. Alan yoğunluğu ve çizimler için kullanılır.",
+  sLy: "Numunenin diğer kenarının uzunluğu. Alan yoğunluğu ve çizimler için kullanılır.",
+  sFixD: "Kelepçenin serbest bıraktığı dairesel açıklığın çapı. Plaka rijitliği bu açıklığın yarıçapına göre hesaplanır; açıklık büyüdükçe plaka yumuşar.",
+  pE: "Plakanın düzlem içi eğilme modülü. Eğilme ve membran rijitliğini belirler.",
+  pEz: "Kalınlık yönündeki modül. Yalnız kompozitte, temas rijitliğinin hesabında kullanılır.",
+  pNu: "Poisson oranı. Eğilme rijitliğinde ve temas modülünde yer alır.",
+  pG: "Tabakalar arası mod II kırılma tokluğu. Kompozitte delaminasyonun başladığı kuvveti belirler.",
+  pSy: "Akma dayanımı. Metal ve polimerde hem plastik çökme yükünü hem temas bölgesindeki akmayı belirler.",
+  pST: "Çekme dayanımı. Seramik ve camda plakanın kırıldığı yükü belirler.",
+  pRho: "Yoğunluk. Yalnız alan yoğunluğu ve özgül emilim hesabında kullanılır, çözümü etkilemez.",
+  pModel: "Hasarın hangi bağıntıyla başlayacağını seçer: kompozitte delaminasyon, metal ve polimerde plastik çökme, seramikte kırılma.",
+  sTemp: "Numunenin deney anındaki sıcaklığı. Program bu sıcaklıkta modül, dayanım ve matris baskın özellik çarpanlarını uygular. Kullanılan literatür verisi −50 ile 70 °C arasında geçerlidir; bu aralığın dışında değer girilemez."
+};
+function addInfoIcons() {
+  Object.keys(INFO_TEXT).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const lab = el.closest("label") || el.parentElement;
+    const sp = lab && lab.querySelector("span");
+    if (!sp || sp.querySelector(".infoDot")) return;
+    const b = document.createElement("span");
+    b.className = "infoDot";
+    b.setAttribute("role", "img");
+    b.setAttribute("tabindex", "0");
+    b.setAttribute("aria-label", INFO_TEXT[id]);
+    b.title = INFO_TEXT[id];
+    b.textContent = "i";
+    sp.appendChild(b);
+  });
+}
+
+/* ===== 2.4.0: sicaklik girisini izin verilen araliga kelepceler ===== */
+function clampTemp() {
+  const el = $("sTemp");
+  if (!el) return;
+  const lo = T_SOGUK, hi = T_SICAK;
+  const fix = () => {
+    const v = parseFloat(el.value);
+    if (!isFinite(v)) return;
+    if (v < lo) el.value = lo;
+    if (v > hi) el.value = hi;
+  };
+  el.addEventListener("change", fix);
+  el.addEventListener("blur", fix);
+  el.addEventListener("input", () => {
+    const v = parseFloat(el.value);
+    el.setCustomValidity(isFinite(v) && (v < lo || v > hi)
+      ? `Sıcaklık ${lo} ile ${hi} °C arasında olmalıdır.` : "");
+  });
+}
+
+/* ===== 2.4.0: hesaplanan degerlerden hasar gorunumu ===== */
+function damageSVG(run) {
+  const m = run.res.m, S = run.S;
+  const a = (S.fixD || 76.2) / 2, t = S.t, R = (S.head.D || 20) / 2;
+  const perf = !!m.perforated;
+  const w = isFinite(m.xmax) ? m.xmax : 0;
+  const W = 420, H = 190, cx = W / 2, cy = 112;
+  const sx = (W - 60) / (2 * a * 1.25), sy = Math.min(sx, 34 / Math.max(w, 0.4));
+  const X = r => cx + r * sx, Y = v => cy + v * sy;
+  const ts = Math.max(3, t * sx);
+  const shape = r => w * Math.pow(1 - Math.pow(Math.min(Math.abs(r) / a, 1), 2), 2);
+  const pts = [];
+  for (let i = 0; i <= 80; i++) { const r = -a + (2 * a) * i / 80; pts.push([X(r), Y(shape(r))]); }
+  const top = pts.map((q, i) => `${i ? "L" : "M"}${q[0].toFixed(1)},${q[1].toFixed(1)}`).join("");
+  const bot = pts.slice().reverse().map(q => `L${q[0].toFixed(1)},${(q[1] + ts).toFixed(1)}`).join("");
+  const plate = top + bot + "Z";
+  const holeW = perf ? R * sx : 0;
+  return `<svg class="dmg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Hesaplanan hasar görünümü">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="none"></rect>
+    <path d="${plate}" fill="#b9c3cc" stroke="#44515c" stroke-width="1.2"></path>
+    ${perf ? `<rect x="${(cx - holeW).toFixed(1)}" y="${(Y(w) - 2).toFixed(1)}" width="${(2 * holeW).toFixed(1)}" height="${(ts + 4).toFixed(1)}" fill="#fff" stroke="#c0392b" stroke-width="1.2"></rect>` : ""}
+    <rect x="${(X(-a) - 26).toFixed(1)}" y="${(Y(0) - 4).toFixed(1)}" width="26" height="${(ts + 8).toFixed(1)}" fill="#6b7780"></rect>
+    <rect x="${X(a).toFixed(1)}" y="${(Y(0) - 4).toFixed(1)}" width="26" height="${(ts + 8).toFixed(1)}" fill="#6b7780"></rect>
+    <circle cx="${cx}" cy="${(Y(w) - R * sy * 0.0 - R * sx).toFixed(1)}" r="${(R * sx).toFixed(1)}" fill="#9fb6d6" stroke="#3b5572" stroke-width="1.2"></circle>
+    <line x1="${cx}" y1="${(Y(w) - R * sx * 2 - 26).toFixed(1)}" x2="${cx}" y2="${(Y(w) - R * sx * 2 - 6).toFixed(1)}" stroke="#3b5572" stroke-width="2" marker-end="url(#dmgArr)"></line>
+    <defs><marker id="dmgArr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#3b5572"></path></marker></defs>
+    <text x="8" y="${H - 8}" font-size="11" fill="#44515c">Açıklık Ø${fmt(2 * a, 1)} mm · kalınlık ${fmt(t, 2)} mm · azami çökme ${fmt(w, 2)} mm${perf ? " · delindi" : ""}</text>
+  </svg>`;
+}
+
+/* ===== 2.5.0: hasar bolgesinin yakin gorunumu =====
+   Ayni hesaplanan degerlerden cizilir; yalniz merkez bolge buyutulur ve
+   olculer ile hesaplanan hasar kipinin isaretleri eklenir. */
+function damageZoomSVG(run) {
+  const m = run.res.m, S = run.S;
+  const a = (S.fixD || 76.2) / 2, t = S.t, R = (S.head.D || 20) / 2;
+  const perf = !!m.perforated;
+  const w = isFinite(m.xmax) ? m.xmax : 0;
+  const kip = String(m.mode || "");
+  const Rz = 2.6 * R;                                   // gosterilen yari genislik, mm
+  const W = 470, H = 250, cx = W / 2;
+  const sx = (W - 170) / (2 * Rz);                      // mm -> px, iki eksende ayni (gercek oran)
+  const ust = 30;                                       // vurucu ucunun ustunde birakilan pay, px
+  const cy = ust + 2 * R * sx;                          // cokmemis ust yuzeyin y'si
+  const X = r => cx + r * sx, Y = v => cy + v * sy, sy = sx;
+  const ts = t * sx;
+  const shape = r => w * Math.pow(1 - Math.pow(Math.min(Math.abs(r) / a, 1), 2), 2);
+  const pts = [];
+  for (let i = 0; i <= 60; i++) { const r = -Rz + (2 * Rz) * i / 60; pts.push([X(r), Y(shape(r))]); }
+  const top = pts.map((q, i) => `${i ? "L" : "M"}${q[0].toFixed(1)},${q[1].toFixed(1)}`).join("");
+  const bot = pts.slice().reverse().map(q => `L${q[0].toFixed(1)},${(q[1] + ts).toFixed(1)}`).join("");
+  const plate = top + bot + "Z";
+  const y0 = Y(shape(0)), y1 = y0 + ts;                 // merkezde ust ve alt yuzey
+  // hesaplanan hasar kipinin gorsel karsiligi
+  let hasar = "";
+  if (perf) {
+    hasar = `<rect x="${X(-R).toFixed(1)}" y="${(y0 - 1).toFixed(1)}" width="${(2 * R * sx).toFixed(1)}" height="${(ts + 2).toFixed(1)}" fill="#ffffff" stroke="#c0392b" stroke-width="1.6"></rect>`;
+  } else if (/Penetrasyon/i.test(kip)) {
+    hasar = `<path d="M${X(-R).toFixed(1)},${y0.toFixed(1)} L${X(-R).toFixed(1)},${(y0 + ts * 0.62).toFixed(1)} L${X(R).toFixed(1)},${(y0 + ts * 0.62).toFixed(1)} L${X(R).toFixed(1)},${y0.toFixed(1)}" fill="#ffffff" stroke="#c0392b" stroke-width="1.6"></path>`;
+  } else if (/delaminasyon|Lif kırılması/i.test(kip)) {
+    for (let k = 1; k <= 3; k++) {
+      const yy = y0 + ts * k / 4, g = R * (0.7 + 0.45 * k);
+      hasar += `<line x1="${X(-g).toFixed(1)}" y1="${yy.toFixed(1)}" x2="${X(g).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#c0392b" stroke-width="1.6"></line>`;
+    }
+  } else if (/Tıkaç|tıkaç/i.test(kip)) {
+    hasar = `<line x1="${X(-R).toFixed(1)}" y1="${y0.toFixed(1)}" x2="${X(-R).toFixed(1)}" y2="${y1.toFixed(1)}" stroke="#c0392b" stroke-width="1.8"></line>
+      <line x1="${X(R).toFixed(1)}" y1="${y0.toFixed(1)}" x2="${X(R).toFixed(1)}" y2="${y1.toFixed(1)}" stroke="#c0392b" stroke-width="1.8"></line>`;
+  } else if (/Çatlama|Kırılma|çökme/i.test(kip)) {
+    for (let k = -1; k <= 1; k++) {
+      hasar += `<line x1="${X(k * R * 0.55).toFixed(1)}" y1="${y1.toFixed(1)}" x2="${X(k * R * 0.55).toFixed(1)}" y2="${(y1 - ts * 0.55).toFixed(1)}" stroke="#c0392b" stroke-width="1.6"></line>`;
+    }
+  }
+  // olcu cubugu: 10 mm
+  const sb = 10 * sx, sbx = 14, sby = H - 16;
+  return `<svg class="dmg dmgZoom" viewBox="0 0 ${W} ${H}" role="img" aria-label="Hasar bölgesinin yakın görünümü">
+    <path d="${plate}" fill="#b9c3cc" stroke="#44515c" stroke-width="1.2"></path>
+    ${hasar}
+    <circle cx="${cx}" cy="${(y0 - R * sx).toFixed(1)}" r="${(R * sx).toFixed(1)}" fill="#9fb6d6" stroke="#3b5572" stroke-width="1.2"></circle>
+    <line x1="${X(-R).toFixed(1)}" y1="${(ust - 14).toFixed(1)}" x2="${X(R).toFixed(1)}" y2="${(ust - 14).toFixed(1)}" stroke="#3b5572" stroke-width="1" marker-start="url(#zA)" marker-end="url(#zA)"></line>
+    <text x="${cx}" y="${(ust - 18).toFixed(1)}" font-size="10.5" fill="#3b5572" text-anchor="middle">Ø${fmt(2 * R, 2)} mm</text>
+    <line x1="${(X(Rz) + 10).toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(X(Rz) + 10).toFixed(1)}" y2="${y1.toFixed(1)}" stroke="#44515c" stroke-width="1" marker-start="url(#zA)" marker-end="url(#zA)"></line>
+    <text x="${(X(Rz) + 15).toFixed(1)}" y="${((y0 + y1) / 2 + 4).toFixed(1)}" font-size="10.5" fill="#44515c">t = ${fmt(t, 2)} mm</text>
+    <line x1="${(X(-Rz) - 10).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(X(-Rz) - 10).toFixed(1)}" y2="${y0.toFixed(1)}" stroke="#44515c" stroke-width="1" marker-start="url(#zA)" marker-end="url(#zA)"></line>
+    <text x="${(X(-Rz) - 15).toFixed(1)}" y="${((cy + y0) / 2 + 4).toFixed(1)}" font-size="10.5" fill="#44515c" text-anchor="end">w = ${fmt(w, 2)} mm</text>
+    <line x1="${(X(-Rz) - 10).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(X(Rz) + 4).toFixed(1)}" y2="${cy.toFixed(1)}" stroke="#90a0ac" stroke-width="0.8" stroke-dasharray="4 3"></line>
+    <defs><marker id="zA" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#44515c"></path></marker></defs>
+    <rect x="${sbx}" y="${sby}" width="${sb.toFixed(1)}" height="4" fill="#44515c"></rect>
+    <text x="${(sbx + sb + 6).toFixed(1)}" y="${(sby + 4).toFixed(1)}" font-size="10.5" fill="#44515c">10 mm</text>
+  </svg>`;
+}
+
 function renderResults(run) {
   const { res, S } = run, m = res.m;
   const metric = (label, v, d) => `<div class="metric"><span>${label}</span><b>${fmt(v, d)}</b></div>`;
@@ -1261,7 +1456,11 @@ function renderResults(run) {
     if (m.Fmax > S.mach.cell) body += `<p class="warn on">Azami kuvvet yük hücresi kapasitesini (${fmt(S.mach.cell, 0)} kN) aşıyor.</p>`;
   }
   const notes = (res.notes || []).map(n => `<li>${esc(n)}</li>`).join("");
-  $("results").innerHTML = head + body
+  const dmg = res.stopped ? "" : `<h3 class="sub">Hasar görünümü</h3>${damageSVG(run)}
+    <p class="hint">Görünüm hesaplanan değerlerden çizilir: ankastre dairesel plakanın çökme biçimi, azami çökme, kelepçe açıklığı, numune kalınlığı ve vurucu uç çapı. Delinme durumunda uç çapında açıklık gösterilir. Çizim ölçekli bir hasar haritası değil, sonucun şematik karşılığıdır.</p>
+    <div class="zoomBox"><h3 class="sub">Hasar bölgesi, yakın görünüm</h3>${damageZoomSVG(run)}
+    <p class="hint">Vurucu ucunun altındaki bölge gerçek oranla büyütülmüştür: yatay ve düşey ölçek aynıdır, ölçek çubuğu 10 mm'dir. Kırmızı işaretler hesaplanan hasar kipinin yerini gösterir: delinmede uç çapında açıklık, delaminasyonda katmanlar arası çizgiler, tıkaç kesmesinde uç kenarındaki kesme düzlemleri, çökme ve çatlamada çekme yüzeyindeki çatlaklar.</p></div>`;
+  $("results").innerHTML = head + body + dmg
     + (notes ? `<ul class="errs">${notes}</ul>` : "")
     + (run.warn.length ? `<p class="warn on">${run.warn.join(" ")}</p>` : "")
     + `<p class="hint">Fd kompozitte Davies, metalde plastik çökme, seramikte Roark bağıntısından; temas Hertz ve Sneddon bağıntılarından, plaka yanıtı ankastre dairesel plaka çözümünden gelir. Fd üstü davranış yalnız kaynaklı kalibrasyon parametreleri girildiğinde hesaplanır.</p>`;
@@ -1347,7 +1546,7 @@ function plot(cv, sets, o) {
   });
   c.restore();
 }
-function fmtTick(v, d) { const dec = d >= 1 ? 0 : Math.min(3, Math.ceil(-Math.log10(d))); return v.toLocaleString("tr-TR", { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function fmtTick(v, d) { const dec = d >= 1 ? 0 : Math.min(3, Math.ceil(-Math.log10(d))); return v.toLocaleString(LOC(), { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 
 const CH = {
   Ft: { x: "t", y: "F", xl: "Zaman, ms", yl: "Kuvvet, kN" },
@@ -1558,7 +1757,7 @@ function selfTest() {
   const base = { mass: 15.7, head: { shape: "hemi", D: 20, mat: "steel" }, cal: emptyCal(), t: 3, aEq: 38.1, fixture: "circle" };
   const run = (k, E, T) => simulate({ ...base, v0: Math.sqrt(2 * E / 15.7), mat: { ...MATS[k].constants, model: MATS[k].model, temp: MATS[k].temp }, T });
   ok("12 çalışma malzemesi yüklü", Object.values(MATS).filter(m => m.group === "study").length === 12);
-  ok("Hitit kütlesi 2E/v² ile 15,7 kg", Math.abs(2 * 100 / 3.57 ** 2 - 15.7) < 0.05);
+  ok("Düzen kütlesi 2E/v² ile 15,7 kg", Math.abs(2 * 100 / 3.57 ** 2 - 15.7) < 0.05);
   const ti = run("st_ti", 5, 23); ok("Ti6Al4V 5 J elastik, durmadan biter", !ti.blocked && !ti.stopped && ti.m.mode.startsWith("Elastik"));
   ok("Ti 5 J: Thornton temasında kalıcı iz enerji emer (%1 ile %50 arası)", ti.m && ti.m.ratio > 0.01 && ti.m.ratio < 0.5);
   const sio = simulate({ ...base, v0: Math.sqrt(2 * 0.05 / 15.7), mat: { ...MATS.st_sio2.constants, model: "cer", temp: null }, T: 23 });
