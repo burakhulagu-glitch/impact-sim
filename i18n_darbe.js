@@ -1,6 +1,16 @@
 /* Impact Simulator (IS) ve MC + Darbe kabuğu için İngilizce sözlük (i18n.js'ten önce yüklenir).
    B3D_I18N_EXTRA: tam metin kalıpları (sayılar "#"). B3D_I18N_FRAG: tam eşleşme yoksa uygulanan parçalar (uzundan kısaya). */
 window.B3D_I18N_EXTRA = {
+  /* ===== IS 2.7.0 ===== */
+  "Testleri sıfırla": "Clear tests",
+  "Yapılan testleri ve sonuçları siler. Makine, vurucu ve numune ayarları ile malzeme kütüphanesi değişmez.":
+    "Clears the tests and the results. The machine, impactor and specimen settings and the material library are left unchanged.",
+  "numune # mm · # J · # m/s · # °C · Yarı küresel uç Ø# mm · açıklık Ø# mm":
+    "specimen # mm · # J · # m/s · # °C · hemispherical tup Ø# mm · opening Ø# mm",
+  "· numune # mm · # J · # m/s · # °C · Yarı küresel uç Ø# mm · açıklık Ø# mm":
+    "· specimen # mm · # J · # m/s · # °C · hemispherical tup Ø# mm · opening Ø# mm",
+  "numune": "specimen",
+  "açıklık": "opening",
   "B#D Malzeme ve Darbe": "B#D Materials and Impact",
   /* 2.5.0: hasar bolgesinin yakin gorunumu */
   "Hasar bölgesi, yakın görünüm": "Damage zone, close-up view",

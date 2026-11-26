@@ -271,7 +271,7 @@ button.danger{border-color:var(--red);color:var(--red)}
         <label class="f" id="inEBox"><span>Darbe enerjisi, J</span><input type="number" id="inE" step="0.5" min="0.1"></label>
         <label class="f" id="inHBox" style="display:none"><span>Düşme yüksekliği, mm</span><input type="number" id="inH" step="1" min="1"></label>
         <button class="primary" id="run">Testi başlat</button>
-        <button id="btnReset" type="button" title="Makine, vurucu, numune ve malzeme ayarlarını başlangıç değerlerine döndürür; test günlüğünü ve sonuçları temizler. Kayıtlı malzemeleriniz silinmez.">Sıfırla</button>
+        <button id="btnReset" type="button" title="Yapılan testleri ve sonuçları siler. Makine, vurucu ve numune ayarları ile malzeme kütüphanesi değişmez.">Testleri sıfırla</button>
       </div>
     </section>
 
@@ -695,7 +695,7 @@ const FIXTURES = [
   { id: "custom", name: "Özel dairesel açıklık", d: 50, Lx: 100, Ly: 100 }
 ];
 
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.7.0";
 
 /* Genel temel malzemeler. Değerler kaynaksız örnek değerlerdir: varsayım etiketi taşır,
    doğrulanmış literatür değeri değildir. Model kalibrasyon parametreleri boştur (null). */
@@ -901,22 +901,12 @@ function importJSON(e) {
   e.target.value = "";
 }
 
-/* ===== 2.4.0: butun ayarlari baslangic degerine dondurur ===== */
+/* ===== 2.7.0: yalnizca yapilan testleri ve sonuclari siler =====
+   Makine, vurucu ve numune ayarlari ile malzeme kutuphanesi oldugu gibi kalir. */
 function resetAll() {
-  if (!confirm("Makine, vurucu, numune ve malzeme ayarları başlangıç değerlerine dönecek; test günlüğü ve sonuçlar silinecek. Kayıtlı malzemeleriniz silinmez. Sürdürülsün mü?")) return;
+  if (!state.log.length && !state.current) return;
+  if (!confirm("Yapılan testler ve sonuçlar silinecek. Makine, vurucu ve numune ayarları ile malzeme kütüphanesi değişmez. Sürdürülsün mü?")) return;
   state.log = []; state.current = null; state.runId = 0;
-  state.shape = "hemi";
-  $("hD").value = 20; $("hAng").value = 45; $("hMat").value = "steel";
-  $("hPreset").value = "";
-  $("sFix").value = "ring76";
-  $("inMode").value = "E"; $("inEBox").style.display = ""; $("inHBox").style.display = "none";
-  $("inE").value = 20;
-  $("sDirect").checked = true; $("sT").disabled = false; $("sT").value = 3;
-  $("sPlies").value = ""; $("sPlyT").value = "";
-  $("sTemp").value = 23;
-  applyMachine("hitit_tez");
-  fillMatSelect("st_hyb"); applyMat("st_hyb");
-  applyFixture(); syncShape();
   $("results").innerHTML = `<p class="empty">Malzemeyi ve numune kalınlığını girip Testi başlat’a basın.</p>`;
   renderLog(); drawMain(); refresh();
 }
@@ -1341,7 +1331,12 @@ function damageSVG(run) {
   const perf = !!m.perforated;
   const w = isFinite(m.xmax) ? m.xmax : 0;
   const W = 420, H = 190, cx = W / 2, cy = 112;
-  const sx = (W - 60) / (2 * a * 1.25), sy = Math.min(sx, 34 / Math.max(w, 0.4));
+  /* 2.7.0: dusey olcek cokmeye gore normalize edilmez; iki eksen de ayni olcegi kullanir,
+     boylece gorunum vakadan vakaya gercekten degisir. Olcek yalnizca cizim alanina sigacak
+     kadar kucultulur (buyuk cokmelerde). */
+  const sTam = (W - 60) / (2 * a * 1.25);
+  const yerPay = H - cy - 16;                       // cokme + kalinlik icin kalan dusey alan, px
+  const sx = Math.min(sTam, yerPay / Math.max(w + t, 0.5)), sy = sx;
   const X = r => cx + r * sx, Y = v => cy + v * sy;
   const ts = Math.max(3, t * sx);
   const shape = r => w * Math.pow(1 - Math.pow(Math.min(Math.abs(r) / a, 1), 2), 2);
@@ -1430,7 +1425,9 @@ function renderResults(run) {
   const metric = (label, v, d) => `<div class="metric"><span>${label}</span><b>${fmt(v, d)}</b></div>`;
   const assumed = String(S.matOrigin).startsWith("varsayım");
   let head = `<p style="margin:0 0 12px"><span class="mode" data-k="${modeKey(m.mode)}">${m.mode}</span>
-    <span style="color:var(--muted);font-size:14px;margin-left:8px">Test ${run.id}, çözücü ${res.version}</span></p>`;
+    <span style="color:var(--muted);font-size:14px;margin-left:8px">Test ${run.id}, çözücü ${res.version}</span></p>
+    <p class="numune" style="margin:0 0 12px;font-size:14px"><b>${esc(run.matName)}</b>
+    <span style="color:var(--muted)"> · numune ${fmt(S.t, 2)} mm · ${fmt(m.Ei, 2)} J · ${fmt(m.v0, 3)} m/s · ${fmt(m.T, 0)} °C · ${SHAPES.find(sh => sh.id === S.head.shape).name} uç Ø${fmt(S.head.D, 1)} mm · açıklık Ø${fmt(S.fixD || 76.2, 1)} mm</span></p>`;
   if (assumed) head += `<p class="warn on">Malzeme sabitleri varsayımdır (kaynaksız örnek). Sonuç doğrulanmış bir öngörü değildir.</p>`;
   let body;
   if (res.stopped) {
@@ -1723,8 +1720,8 @@ function runTempSweep() {
    eklenir (hasar eşiği girdileri kullanıcı tarafından kaynağıyla girilmelidir). */
 function mcSync() {
   let cat = null; try { cat = JSON.parse(localStorage.getItem("bds.mccatalog.v1") || "null"); } catch (e) { cat = null; }
-  if (!cat || !Array.isArray(cat.materials)) return { catalog: 0, matched: 0, added: 0 };
-  let matched = 0, added = 0;
+  if (!cat || !Array.isArray(cat.materials)) return { catalog: 0, matched: 0, added: 0, incomplete: 0 };
+  let matched = 0, added = 0, eksik = 0;
   const ok = x => typeof x === "number" && isFinite(x) && x > 0;
   /* izotroplar MC kimliğiyle birebir; kompozitler yalnız MC'de üretilmiş tabaka/dizilim adlarıyla (lif ya da reçine bileşeni eşleşmez) */
   const RULES = [
@@ -1743,14 +1740,18 @@ function mcSync() {
       if (ok(m.rho_kg_m3)) M.constants.rho = m.rho_kg_m3;
       M.mcId = m.id; matched++;
     } else {
+      /* 2.7.0: hasar esigi girdileri olmayan MC karti listeye eklenmez; yalniz sayilir.
+         Boylece malzeme listesinde yalnizca cozulebilir, tam tanimli malzemeler bulunur. */
       const k = "mc_" + id.replace(/[^a-z0-9_]/g, "").slice(0, 30); if (!id || MATS[k]) return;
-      MATS[k] = { id: k, name: (m.name || id) + " (MC)", origin: "MC kartı", source: "MC kartı " + id + ": E ve ρ. Hasar eşiği girdileri kaynağıyla girilmeli.", model: "comp", group: "mc", temp: null,
-        constants: { E: ok(m.E_GPa) ? m.E_GPa : null, Ez: null, nu: ok(m.nu) ? m.nu : null, GIIc: null, sy: null, sT: null, rho: ok(m.rho_kg_m3) ? m.rho_kg_m3 : null }, calibration: emptyCal() };
+      const tam = ok(m.E_GPa) && ok(m.rho_kg_m3) && ok(m.nu) && ok(m.Ez_GPa) && ok(m.GIIc);
+      if (!tam) { eksik++; return; }
+      MATS[k] = { id: k, name: (m.name || id) + " (MC)", origin: "MC kartı", source: "MC kartı " + id, model: "comp", group: "mc", temp: null,
+        constants: { E: m.E_GPa, Ez: m.Ez_GPa, nu: m.nu, GIIc: m.GIIc, sy: null, sT: null, rho: m.rho_kg_m3 }, calibration: emptyCal() };
       added++;
     }
   });
   fillMatSelect($("sMat").value); refresh();
-  return { catalog: cat.materials.length, matched, added };
+  return { catalog: cat.materials.length, matched, added, incomplete: eksik };
 }
 function selfTest() {
   const R = [], ok = (n, c) => R.push({ n, ok: !!c });
@@ -1785,7 +1786,8 @@ window.DARBE_API = Object.freeze({ version: APP_VERSION, simulate, tempFactors, 
 
 init();
 renderLog();
-try { mcSync(); } catch (e) {}
+/* 2.7.0: acilista MC aktarimi yapilmaz; program yalniz tam tanimli calisma malzemeleriyle acilir.
+   MC kutuphanesi, kullanici ust seritten darbe bolumune gectiginde DARBE_API.mcSync() ile aktarilir. */
 
 </script>
 <script src="i18n_darbe.js"></script>
