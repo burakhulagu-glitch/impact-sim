@@ -168,7 +168,7 @@ window.B3D_I18N_EXTRA = {
   /* makineler ve kelepçeler */
   "CEAST #, tez düzeni (# kg, Ø# mm)": "CEAST #, thesis setup (# kg, Ø# mm)",
   "Düşen kütle # kg, tezdeki darbe enerjisi ve başlangıç hızından türetildi (m = #E/v²). Ø# mm yarı küresel uç ve # × # mm numune aynı deneylerden. Enerji aralığı cihaz sayfasından.": "Falling mass # kg, derived from the thesis impact energy and initial velocity (m = #E/v²). The Ø# mm hemispherical tup and the # × # mm specimen come from the same tests. Energy range from the machine page.",
-  "Instron CEAST # (Fractovis Plus)": "Instron CEAST # (Fractovis Plus)", "Instron Dynatup # HV": "Instron Dynatup # HV",
+  "Ticari düşen ağırlık cihazı, # J'ye kadar": "Commercial drop weight machine, up to # J",
   "# ile # J enerji aralığı cihaz sayfasından alındı. Yükseklik, kütle ve hız sınırları tipik katalog değeridir; kullandığınız cihazın kartıyla doğrulayın.": "The # to # J energy range is from the machine page. Height, mass and velocity limits are typical catalogue values; check them against your machine's data sheet.",
   "Kütle ve uç varsayılanı yayımlanmış çalışmadan, diğer sınırlar yaklaşık katalog değeridir.": "Default mass and tup are from a published study; other limits are approximate catalogue values.",
   "# ile # J enerji, en az # mm düşme yüksekliği ve # ile # m/s hız aralığı BAP alım şartnamesinden alındı. Kütle sınırı bu değerlerden türetildi.": "The # to # J energy, at least # mm drop height and # to # m/s velocity range are from the BAP procurement specification. The mass limit was derived from these values.",

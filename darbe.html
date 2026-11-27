@@ -358,7 +358,7 @@ button.danger{border-color:var(--red);color:var(--red)}
    [TH]  Thornton (1997) J Appl Mech 64:383: elastik-tam plastik küre teması (metal ve polimer, 2.3.0)
 */
 const SOLVER_VERSION = "2.6.0";
-const f2 = (v) => v.toFixed(2).replace(".", ",");
+const f2 = (v) => v.toFixed(2).replace(".", ",").replace(/-/g, "−");
 const G = 9.81;
 
 /* Vurucu ucu malzemesi: malzeme kartı değil, test düzeneği girdisi. Tipik değerler, varsayım. */
@@ -665,10 +665,10 @@ const MACHINES = [
   { id: "hitit_tez", name: "Bu çalışmanın düzeni (15,7 kg, Ø20 mm yarı küresel uç)", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 70, vMax: 24, cell: 22, defMass: 15.7, defD: 20,
     labs: "Ticari düşen ağırlık cihazı; 100 × 100 mm numune, Ø20 mm yarı küresel uç",
     note: "Düşen kütle 15,7 kg, aynı düzende kayda alınmış bir deneyin darbe enerjisi ve başlangıç hızından türetildi (m = 2E/v²). Enerji, kütle ve hız sınırları cihazın üretici kataloğundan alındı." },
-  { id: "ceast9350", name: "Instron CEAST 9350 (Fractovis Plus)", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 70, vMax: 24, cell: 22, defMass: 5.045, defD: 20,
+  { id: "ceast9350", name: "Ticari düşen ağırlık cihazı, 757 J'ye kadar", Emin: 0.59, Emax: 757, hMax: 1.1, mMin: 2.0, mMax: 70, vMax: 24, cell: 22, defMass: 5.045, defD: 20,
     labs: "Ticari düşen ağırlık cihazı (üretici katalog değerleri)",
     note: "0,59 ile 757 J enerji aralığı, 2 ile 70 kg düşen kütle ve 24 m/s azami hız üretici kataloğundan alındı. Yükseklik sınırı serbest düşme için tipik değerdir; kullandığınız cihazın kartıyla doğrulayın." },
-  { id: "dynatup9250", name: "Instron Dynatup 9250 HV", Emin: 1, Emax: 1600, hMax: 1.25, mMin: 2.5, mMax: 70, vMax: 20, cell: 22, defMass: 6.32, defD: 12.7,
+  { id: "dynatup9250", name: "Ticari düşen ağırlık cihazı, 1600 J'ye kadar", Emin: 1, Emax: 1600, hMax: 1.25, mMin: 2.5, mMax: 70, vMax: 20, cell: 22, defMass: 6.32, defD: 12.7,
     labs: "Ticari düşen ağırlık cihazı (üretici katalog değerleri)",
     note: "Kütle ve uç varsayılanı yayımlanmış bir çalışmadan, diğer sınırlar yaklaşık katalog değeridir." },
   { id: "cukurova", name: "Özel yapım düşen ağırlık sistemi, 2 ile 350 J", Emin: 2, Emax: 350, hMax: 1.4, mMin: 2, mMax: 25.5, vMax: 5.2, cell: 22, defMass: 5, defD: 20,
@@ -695,7 +695,7 @@ const FIXTURES = [
   { id: "custom", name: "Özel dairesel açıklık", d: 50, Lx: 100, Ly: 100 }
 ];
 
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "2.7.1";
 
 /* Genel temel malzemeler. Değerler kaynaksız örnek değerlerdir: varsayım etiketi taşır,
    doğrulanmış literatür değeri değildir. Model kalibrasyon parametreleri boştur (null). */
@@ -810,7 +810,9 @@ const $ = (id) => document.getElementById(id);
 const num = (id) => parseFloat($(id).value);
 /* sayı biçimi arayüz diline bağlıdır: Türkçede virgül, İngilizcede nokta */
 const LOC = () => (window.B3D_I18N && window.B3D_I18N.get() === "en") ? "en-US" : "tr-TR";
-const fmt = (v, d = 2) => (v == null || !isFinite(v)) ? "yok" : v.toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d });
+/* 2.7.1: ekrana yazilan sayilarda gercek eksi isareti (U+2212) kullanilir; disa aktarilan dosyalar degismez */
+const eksi = (s) => String(s).replace(/-/g, "−");
+const fmt = (v, d = 2) => (v == null || !isFinite(v)) ? "yok" : eksi(v.toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d }));
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -1543,7 +1545,7 @@ function plot(cv, sets, o) {
   });
   c.restore();
 }
-function fmtTick(v, d) { const dec = d >= 1 ? 0 : Math.min(3, Math.ceil(-Math.log10(d))); return v.toLocaleString(LOC(), { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function fmtTick(v, d) { const dec = d >= 1 ? 0 : Math.min(3, Math.ceil(-Math.log10(d))); return eksi(v.toLocaleString(LOC(), { minimumFractionDigits: dec, maximumFractionDigits: dec })); }
 
 const CH = {
   Ft: { x: "t", y: "F", xl: "Zaman, ms", yl: "Kuvvet, kN" },
