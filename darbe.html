@@ -695,7 +695,7 @@ const FIXTURES = [
   { id: "custom", name: "Özel dairesel açıklık", d: 50, Lx: 100, Ly: 100 }
 ];
 
-const APP_VERSION = "2.7.1";
+const APP_VERSION = "2.7.2";
 
 /* Genel temel malzemeler. Değerler kaynaksız örnek değerlerdir: varsayım etiketi taşır,
    doğrulanmış literatür değeri değildir. Model kalibrasyon parametreleri boştur (null). */
@@ -750,8 +750,8 @@ const LIT_T = {
   st_sio2: { type: "tab", E: [0.99, 1.006], S: [1.10, 0.95], src: LIT_SRC + "; silikada E sıcaklıkla artar (Spinner ve Cleek 1960)" },
   st_al2o3: { type: "tab", E: [1.003, 0.997], S: [1.0, 1.0], src: LIT_SRC + "; bu aralıkta ihmal edilebilir (Munro 1997)" },
   st_sic: { type: "tab", E: [1.002, 0.998], S: [1.0, 1.0], src: LIT_SRC + "; bu aralıkta ihmal edilebilir (Munro 1997)" },
-  st_ud: { type: "tab", E: [1.02, 0.98], S: [1.15, 0.85], M: [1.20, 0.85], G: [0.85, 1.10], Tg: 120, src: LIT_SRC + "; GIIc sıcaklıkla artar (Asp 1998)" },
-  st_wov: { type: "tab", E: [1.03, 0.97], S: [1.15, 0.85], M: [1.20, 0.85], G: [0.85, 1.10], Tg: 120, src: LIT_SRC + "; GIIc sıcaklıkla artar (Asp 1998)" },
+  st_ud: { type: "tab", E: [1.02, 0.98], S: [1.15, 0.85], M: [1.20, 0.85], G: [1.10, 0.85], Tg: 120, src: LIT_SRC + "; mod II kırılma tokluğu sıcaklıkla azalır (Asp 1998)" },
+  st_wov: { type: "tab", E: [1.03, 0.97], S: [1.15, 0.85], M: [1.20, 0.85], G: [1.10, 0.85], Tg: 120, src: LIT_SRC + "; mod II kırılma tokluğu sıcaklıkla azalır (Asp 1998)" },
   st_hyb: { type: "tab", E: [1.05, 0.93], S: [1.20, 0.80], M: [1.25, 0.80], Tg: 120, src: LIT_SRC + "; GIIc verisi yok (1 alındı)" },
   st_ara: { type: "tab", E: [1.05, 0.90], S: [1.05, 0.95], M: [1.20, 0.80], Tg: 120, src: LIT_SRC + "; 66 °C modül ve dayanım LLNL raporundan; GIIc verisi yok" },
   st_uhm: { type: "tab", E: [1.15, 0.75], S: [1.10, 0.80], M: [3.0, 0.60], src: LIT_SRC + "; en belirsiz malzeme, PU matris Tg doğrulanmadı; GIIc verisi yok" },
